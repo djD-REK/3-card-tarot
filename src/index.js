@@ -68,8 +68,6 @@ const tarotDeck = [
   'https://upload.wikimedia.org/wikipedia/en/3/35/Cups04.jpg',
   'https://upload.wikimedia.org/wikipedia/en/d/d7/Cups05.jpg',
   'https://upload.wikimedia.org/wikipedia/en/1/17/Cups06.jpg',
-  'https://upload.wikimedia.org/wikipedia/en/1/17/Cups06.jpg',
-  'https://upload.wikimedia.org/wikipedia/en/1/17/Cups06.jpg',
   'https://upload.wikimedia.org/wikipedia/en/a/ae/Cups07.jpg',
   'https://upload.wikimedia.org/wikipedia/en/6/60/Cups08.jpg',
   'https://upload.wikimedia.org/wikipedia/en/2/24/Cups09.jpg',
@@ -95,7 +93,7 @@ const tarotDeck = [
 ]
 
 // These two are just helpers, they curate spring data, values that are later being interpolated into css
-const to = i => ({ x: 0, y: i * -4, scale: 1, rot: -10 + Math.random() * 20, delay: i * 100, zIndex: '1' })
+const to = i => ({ x: 0, y: i * -4, scale: 1, rot: -5 + Math.random() * 10, delay: i * 100 })
 const from = i => ({ x: 0, rot: 0, scale: 1.5, y: -1000, zIndex: '0' })
 // This is being used down there in the view, it interpolates rotation and scale into a css transform
 const trans = (r, s) => `perspective(1500px) rotateX(30deg) rotateY(${r / 10}deg) rotateZ(${r}deg) scale(${s})`
@@ -119,9 +117,10 @@ function Deck() {
   const [gone] = useState(() => new Set()) // The set flags all the cards that are flicked out
   const [props, set] = useSprings(cards.length, i => ({ ...to(i), from: from(i) })) // Create a bunch of springs using the helpers above
   // Create a gesture, we're interested in down-state, delta (current-pos - click-pos), direction and velocity
+  var topOfStack = 0
   const bind = useGesture(({ args: [index], down, delta: [xDelta, yDelta], distance, direction: [xDir, yDir], velocity }) => {
     const trigger = velocity > 0.5 // If you flick hard enough it should trigger the card to fly out
-    const dir = xDir < 0 ? -1 : 1 // Direction should either point left or right
+    const leftOrRight = xDir < 0 ? -1 : 1 // Direction should either point left or right
     if (!down && trigger) gone.add(index) // If button/finger's up and trigger velocity is reached, we flag the card ready to fly out
     set(i => {
       if (index !== i) return // We're only interested in changing spring-data for the current spring
@@ -129,19 +128,17 @@ function Deck() {
       //      const x = isGone ? (200 + window.innerWidth) * dir : down ? xDelta : 0 // When a card is gone it flys out left or right, otherwise goes back to zero
       const x = isGone ? (200 + window.innerWidth) * xDir : down ? xDelta : 0 // When a card is gone it flys out left or right, otherwise goes back to zero
       const y = isGone ? (200 + window.innerWidth) * yDir : down ? yDelta : 0 // When a card is gone it flys out left or right, otherwise goes back to zero
-      const rot = xDelta / 100 + (isGone ? dir * 10 * velocity : 0) // How much the card tilts, flicking it harder makes it rotate faster
+      const rot = xDelta / 100 + (isGone ? leftOrRight * 10 * velocity : 0) // How much the card tilts, flicking it harder makes it rotate faster
       const scale = down ? 1.1 : 1 // Active cards lift up a bit (slight enlargement / zoom in)
       const zIndex = down ? 1 : 0 // Active cards should be on top (have a higher z-index)
+      console.log(topOfStack)
       return { x, y, rot, scale, delay: undefined, config: { friction: 50, tension: down ? 800 : isGone ? 200 : 500 }, zIndex }
     })
     if (!down && gone.size === cards.length) setTimeout(() => gone.clear() || set(i => to(i)), 600)
   })
   // Now we're just mapping the animated values to our view, that's it. Btw, this component only renders once. :-)
   return props.map(({ x, y, rot, scale, zIndex }, i) => (
-    //    <animated.div {...bind(i)} key={i} style={{ transform: interpolate([x, y], (x, y) => `translate3d(${x - 250 + 250 * i}px,${y}px,0)`) }}>
-    //       <animated.div {...bind(i)} style={{ transform: interpolate([rot, scale], trans), backgroundImage: `url(${cards[i]})` }} />
-    //    <animated.div {...bind(i)} key={i} style={{ transform: interpolate([x, y], (x, y) => `translate3d(${x - 250 + 250 * i}px,${y}px,0)`) }}>
-    <animated.div key={i} style={{ transform: interpolate([x, y], (x, y) => `translate3d(${x + 250 * i - 250}px,${y}px,0)`), zIndex }}>
+    <animated.div key={i} style={{ transform: interpolate([x, y], (x, y) => `translate3d(${x + 300 * i - 300}px,${y}px,0)`), zIndex }}>
       {
         // This is the card itself, we're binding our gesture to it (and inject its index so we know which is which)
       }
