@@ -1,4 +1,4 @@
-// Animate 3 Card Tarot Reading by Dr. Derek Austin 🥳 (Github master)
+// Animate 3 Card Tarot Reading by Dr. Derek Austin 🥳
 // Credit Paul Henckel for the original code
 // Source: https://codesandbox.io/s/j0y0vpz59?from-embed
 
@@ -99,12 +99,11 @@ const from = i => ({ x: 0, rot: 0, scale: 1.5, y: -1000, zIndex: '0' })
 const trans = (r, s) => `perspective(1500px) rotateX(30deg) rotateY(${r / 10}deg) rotateZ(${r}deg) scale(${s})`
 
 /**
- * Randomize array element order in-place.
- * Using Durstenfeld shuffle algorithm.
- * Updated for EC6/ECMA2015
- * source: https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+ * Returns an array of three random items from the specified array.
+ * (Randomize array element order in-place. Using Durstenfeld shuffle algorithm. Updated for EC6/ECMA2015)
+ * Source: https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
  */
-function shuffleArrayAndSelect3Cards(array) {
+function shuffleDeckAndSelect3Cards(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     ;[array[i], array[j]] = [array[j], array[i]]
@@ -113,11 +112,10 @@ function shuffleArrayAndSelect3Cards(array) {
 }
 
 function Deck() {
-  const cards = shuffleArrayAndSelect3Cards(tarotDeck)
+  const cards = shuffleDeckAndSelect3Cards(tarotDeck)
   const [gone] = useState(() => new Set()) // The set flags all the cards that are flicked out
   const [props, set] = useSprings(cards.length, i => ({ ...to(i), from: from(i) })) // Create a bunch of springs using the helpers above
   // Create a gesture, we're interested in down-state, delta (current-pos - click-pos), direction and velocity
-  var topOfStack = 0
   const bind = useGesture(({ args: [index], down, delta: [xDelta, yDelta], distance, direction: [xDir, yDir], velocity }) => {
     const trigger = velocity > 0.5 // If you flick hard enough it should trigger the card to fly out
     const leftOrRight = xDir < 0 ? -1 : 1 // Direction should either point left or right
@@ -125,13 +123,11 @@ function Deck() {
     set(i => {
       if (index !== i) return // We're only interested in changing spring-data for the current spring
       const isGone = gone.has(index)
-      //      const x = isGone ? (200 + window.innerWidth) * dir : down ? xDelta : 0 // When a card is gone it flys out left or right, otherwise goes back to zero
       const x = isGone ? (200 + window.innerWidth) * xDir : down ? xDelta : 0 // When a card is gone it flys out left or right, otherwise goes back to zero
-      const y = isGone ? (200 + window.innerWidth) * yDir : down ? yDelta : 0 // When a card is gone it flys out left or right, otherwise goes back to zero
+      const y = isGone ? (200 + window.innerWidth) * yDir : down ? yDelta : 0 // When a card is gone it flys out up or down, otherwise goes back to zero
       const rot = xDelta / 100 + (isGone ? leftOrRight * 10 * velocity : 0) // How much the card tilts, flicking it harder makes it rotate faster
       const scale = down ? 1.1 : 1 // Active cards lift up a bit (slight enlargement / zoom in)
       const zIndex = down ? 1 : 0 // Active cards should be on top (have a higher z-index)
-      console.log(topOfStack)
       return { x, y, rot, scale, delay: undefined, config: { friction: 50, tension: down ? 800 : isGone ? 200 : 500 }, zIndex }
     })
     if (!down && gone.size === cards.length) setTimeout(() => gone.clear() || set(i => to(i)), 600)
